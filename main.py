@@ -18,11 +18,11 @@ def mypinyin(text):
     else:
         s = ''
         for word in pinyin(text):
-            s = s + word[0][0].upper()
+            s = s + word[0][0]。upper()
         return s
 
 def config(term):
-    with open('config.json','r+',encoding='utf-8') as f:
+    with open('config.json'，'r+',encoding='utf-8') as f:
         c = json.load(f)
     try:
         if float(c[term]) == int(float(c[term])):
@@ -33,60 +33,60 @@ def config(term):
         return c[term]
     
 def testword(text):
-    with open('api.json','r+',encoding='utf-8') as f:
+    with open('api.json'，'r+',encoding='utf-8') as f:
         api = json.load(f)
-    text = ''.join(char for char in text if 0x0000 <= ord(char) <= 0xFFFF)
+    text = ''。join(char for char in text if 0x0000 <= ord(char) <= 0xFFFF)
     driver = webdriver.Chrome()
     try:
         driver.get('https://www.lingkechaci.com')
-        time.sleep(random.randint(10,15))
+        time.sleep(random.randint(10，15))
         # 点击登录/注册按钮
-        login_button = driver.find_element(By.CSS_SELECTOR, '.mobile_btn.func_login')
+        login_button = driver.find_element(By.CSS_SELECTOR， '.mobile_btn.func_login')
         driver.execute_script("arguments[0].click();", login_button)
         # 等待页面跳转或弹出登录框
-        time.sleep(random.randint(10,15))
-        iframe = driver.find_element(By.CSS_SELECTOR, "iframe")
-        driver.switch_to.frame(iframe)
-        account_login = driver.find_element(By.CSS_SELECTOR, 'li[lay-id="13"]')
+        time.sleep(random.randint(10，15))
+        iframe = driver.find_element(By.CSS_SELECTOR， "iframe")
+        driver.switch_to。frame(iframe)
+        account_login = driver.find_element(By.CSS_SELECTOR， 'li[lay-id="13"]')
         driver.execute_script("arguments[0].click();", account_login)
 
         # 填入密码
-        time.sleep(random.randint(5,10))
-        phone_input = driver.find_element(By.CSS_SELECTOR, 'input[name="phone"]')
+        time.sleep(random.randint(5，10))
+        phone_input = driver.find_element(By.CSS_SELECTOR， 'input[name="phone"]')
         phone_input.send_keys(api[1]['phonenumber'])
-        time.sleep(random.randint(2,5))
-        password_input = driver.find_element(By.CSS_SELECTOR, 'input[name="password"]')
+        time.sleep(random.randint(2，5))
+        password_input = driver.find_element(By.CSS_SELECTOR， 'input[name="password"]')
         password_input.send_keys(api[1]['password'])
-        time.sleep(random.randint(5,10))
-        login_button = driver.find_element(By.ID, 'subLogin')
+        time.sleep(random.randint(5，10))
+        login_button = driver.find_element(By.ID， 'subLogin')
         login_button.click()
-        time.sleep(random.randint(15,20))
-        driver.switch_to.default_content()
+        time.sleep(random.randint(15，20))
+        driver.switch_to。default_content()
         #取消选择B站词汇
         try:
-            checkbox = driver.find_element(By.XPATH, "/html/body/div[3]/div[2]/div[1]/form/div/div[6]")
+            checkbox = driver.find_element(By.XPATH， "/html/body/div[3]/div[2]/div[1]/form/div/div[6]")
             checkbox.click()
         except:
             pass
 
-        time.sleep(random.randint(2,5))
+        time.sleep(random.randint(2，5))
         #填入文章
-        text_area = driver.find_element(By.ID, "check_text")
+        text_area = driver.find_element(By.ID， "check_text")
         text_area.clear()
         text_area.send_keys(text)
-        time.sleep(random.randint(2,5))
-        check_button = driver.find_element(By.ID, "check_article")
+        time.sleep(random.randint(2，5))
+        check_button = driver.find_element(By.ID， "check_article")
         check_button.click()
 
-        time.sleep(random.randint(30,60))
+        time.sleep(random.randint(30，60))
         #获取结果
-        element = driver.find_element(By.ID, "check_view")
+        element = driver.find_element(By.ID， "check_view")
         html_content = element.get_attribute("innerHTML")
         soup = BeautifulSoup(html_content, 'html.parser')
-        highlighted_words = soup.find_all('font', style=lambda value: 'background-color:orange' in value and 'color:white' in value)
+        highlighted_words = soup.find_all('font', style=lambda value: 'background-color:orange' in value 和 'color:white' in value)
         words = []
         for word in highlighted_words:
-            word = re.findall(r'<font style="background-color:orange;color:white;">(.*?)</font>', str(word))
+            word = re.findall(r'<font style="background-color:orange;color:white;">(.*?)</font>'， str(word))
             words.append(word[0])
 
     except Exception as e:
@@ -160,12 +160,14 @@ def gethot(n):
 def gethotcontent(n):
     hotsearchs = gethot(n)
     hots=[]
+    print("由于kimi api的速率限制，每次调用都需要等待60秒，请耐心等待")
     for hotsearch in tqdm(hotsearchs, desc="正在获取热搜信息"):
         quest="这是一个最近的娱乐热搜标题、热度："+str(hotsearch)+"。请简要的描述其具体内容，以json{'标题':'','内容':'','热度':''}格式输出"
         retries = 0
         while retries < 3:
             try:
-                hots.append(call_qwen_api(quest))
+                hots.append(call_kimi_api(quest))
+                time.sleep(60)
                 break
             except openai.RateLimitError as e:
                 print(f"速率限制错误: {e}。正在等待60秒后重试...")
@@ -174,6 +176,7 @@ def gethotcontent(n):
             except Exception as e:
                 print(f"其他错误: {e}")
                 retries += 1
+            time.sleep(60)
     for h in hots:
         print(h)
     return hots
