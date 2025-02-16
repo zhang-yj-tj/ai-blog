@@ -8,6 +8,10 @@
 ## ⬆️ 开始使用 / **Start Using**
 ### 使用方法 / **Usage**
 
+**先决条件:正确安装浏览器及对应的`webdriver`，并添加到系统变量**
+
+**Prerequisites: Install the browser and corresponding `webdriver` correctly, and add it to the system variables.**
+
 1. **配置`config.json`配置文件和`api.json`密钥文件，并将你前期更新的1-2篇文章放入`articles.json`**  
    - **Configure the `config.json` configuration file and the `api.json` key file, and place your 1-2 initial articles in the `articles.json` file.**
 
