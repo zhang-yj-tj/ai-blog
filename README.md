@@ -22,6 +22,8 @@
 
 - **本项目作者亲测稳定运行，欢迎关注小红书号：`3862445530`**  
   - **The project author has tested it and it runs stably. Follow my Xiaohongshu account: `3862445530`**
+- **演示视频：`https://www.bilibili.com/video/BV1TgAXeZEnk/?vd_source=0edf5e722b70d93eaeea41b7c5e61d6d`**  
+  - **demo video：`https://www.bilibili.com/video/BV1TgAXeZEnk/?vd_source=0edf5e722b70d93eaeea41b7c5e61d6d`**  
 
 ## 🔄 核心工作流 / **Core Workflow**
 
