@@ -5,12 +5,12 @@
 - 专注于小红书平台的智能化内容生产解决方案，通过多阶段AI协同工作流实现从热点追踪到合规发布的完整闭环，特别针对平台特性优化内容安全性和传播效果。
 - An intelligent content production system optimized for Xiaohongshu platform, featuring multi-stage AI collaboration workflow with built-in compliance safeguards.
 
-## ⬆️ 开始使用 / **Start Using**
+## ✅ 开始使用 / **Start Using**
 ### 使用方法 / **Usage**
 
-**先决条件:正确安装浏览器及对应的`webdriver`，并添加到系统变量**
+0. **先决条件:正确安装浏览器及对应的`webdriver`，并添加到系统变量。开发需要使用`Python3.8+`**
 
-**Prerequisites: Install the browser and corresponding `webdriver` correctly, and add it to the system variables.**
+   - **Prerequisites: Install the browser and corresponding `webdriver` correctly, and add it to the system variables.Development requires the use of`Python 3.8+`.**
 
 1. **配置`config.json`配置文件和`api.json`密钥文件，并将你前期更新的1-2篇文章放入`articles.json`**  
    - **Configure the `config.json` configuration file and the `api.json` key file, and place your 1-2 initial articles in the `articles.json` file.**
