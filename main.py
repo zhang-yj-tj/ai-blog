@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import 选项
 import time
 from bs4 import BeautifulSoup
 import random
@@ -10,6 +11,19 @@ from tqdm import tqdm
 import json
 from callapi import call_deepseek_api,call_kimi_api,call_qwen_api,call_photo_api
 import re
+import os
+
+def mydriver():
+    # 配置 Chrome 浏览器选项
+    chrome_options = 选项()
+    # 忽略 SSL 证书错误
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--ignore-certificate-errors-spki-list")
+    # 启用无头模式
+    chrome_options.add_argument("--headless")
+    # 设置 Chrome WebDriver 的路径（如果需要）
+    driver = webdriver.Chrome(options=chrome_options)
+    return driver
 
 def mypinyin(text):
     from pypinyin import pinyin, Style
@@ -36,7 +50,7 @@ def testword(text):
     with open('api.json'，'r+',encoding='utf-8') as f:
         api = json.load(f)
     text = ''。join(char for char in text if 0x0000 <= ord(char) <= 0xFFFF)
-    driver = webdriver.Chrome()
+    driver = mydriver()
     try:
         driver.get('https://www.lingkechaci.com')
         time.sleep(random.randint(10，15))
@@ -102,26 +116,26 @@ def testword(text):
 
 def gethot(n):
     # 初始化 WebDriver（确保 chromedriver 在你的系统路径中）
-    driver = webdriver.Chrome()
+    driver = mydriver()
     try:
         # 打开页面
         driver.get("https://s.weibo.com/top/summary?cate=entrank")  # 替换为你想要爬取的页面 URL
 
         # 等待页面加载完成
         wait = WebDriverWait(driver, 10)
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, 'tbody')))
+        wait.until(EC.presence_of_element_located((By.TAG_NAME， 'tbody')))
 
         # 定位到 <tbody> 元素
-        tbody = driver.find_element(By.TAG_NAME, 'tbody')
+        tbody = driver.find_element(By.TAG_NAME， 'tbody')
 
         # 获取 <tbody> 中的所有 <tr> 元素
-        rows = tbody.find_elements(By.TAG_NAME, 'tr')
+        rows = tbody.find_elements(By.TAG_NAME， 'tr')
 
         # 遍历每一行，提取内容
         data = []
         for row in rows:
             # 获取每一行中的所有 <td> 元素
-            cells = row.find_elements(By.TAG_NAME, 'td')
+            cells = row.find_elements(By.TAG_NAME， 'td')
 
             # 遍历每个 <td> 元素
             cell_data = []
@@ -130,12 +144,12 @@ def gethot(n):
                 cell_class = cell.get_attribute('class')
                 if 'td-02' in cell_class:
                     # 提取 <a> 标签的文本
-                    links = cell.find_elements(By.TAG_NAME, 'a')
-                    link_text = links[0].text if links else ""
+                    links = cell.find_elements(By.TAG_NAME， 'a')
+                    link_text = links[0]。text if links else ""
 
                     # 提取 <span> 标签的文本
-                    spans = cell.find_elements(By.TAG_NAME, 'span')
-                    span_text = spans[0].text if spans else ""
+                    spans = cell.find_elements(By.TAG_NAME， 'span')
+                    span_text = spans[0]。text if spans else ""
 
                     # 将内容和数字分开存储
                     cell_data.append(link_text)
@@ -160,13 +174,17 @@ def gethot(n):
 def gethotcontent(n):
     hotsearchs = gethot(n)
     hots=[]
-    print("由于kimi api的速率限制，每次调用都需要等待60秒，请耐心等待")
+    print('由于kimi api请求速率的限制，每次访问后都需要等待60s')
     for hotsearch in tqdm(hotsearchs, desc="正在获取热搜信息"):
-        quest="这是一个最近的娱乐热搜标题、热度："+str(hotsearch)+"。请简要的描述其具体内容，以json{'标题':'','内容':'','热度':''}格式输出"
+        quest="这是一个今天的娱乐热搜标题："+str(hotsearch[1])+"。请简要的描述其具体内容，50-200字。"
         retries = 0
         while retries < 3:
             try:
-                hots.append(call_kimi_api(quest))
+                hots.append({'排名':hotsearch[0]，
+                             '标题':hotsearch[1]，
+                             '内容':call_kimi_api(quest)，
+                             '热度':hotsearch[2]
+                             })
                 time.sleep(60)
                 break
             except openai.RateLimitError as e:
@@ -182,7 +200,7 @@ def gethotcontent(n):
     return hots
 
 def getarticles(n):
-    with open('articles.json','r+',encoding='utf-8') as f:
+    with open('articles.json'，'r+',encoding='utf-8') as f:
         articles = json.load(f)
     if len(articles)<n:
         inputarticles=articles
@@ -215,55 +233,61 @@ def getnewarticle():
     rate = config("字数偏离最大比率")
     newnum = 0
     toward = config("更新方向")
-    quest = "这是今天的一些热搜："+str(hots)+"。这是我以前发布的一些文章"+str(articles)+"。我的更新方向是"+toward+"。请帮我继续写文章，字数与以前相仿。以'标题:\n字数:\n内容:'的格式输出。注意标题应在20字以内。"
+    if config("衔接上文"):
+        quest = "这是今天的一些热搜："+str(hots)+"。这是我以前发布的一些文章"+str(articles)+"。我的更新方向是"+toward+"。请帮我根据以前文章主题继续写一篇文章，字数与以前相仿。以'标题:\n字数:\n内容:'的格式输出。注意标题应在20字以内。"
+    else:
+        quest = "这是今天的一些热搜："+str(hots)+"。这是我以前发布的一些文章"+str(articles)+"。我的更新方向是"+toward+"。请帮我再写一篇文章，字数与以前相仿，但不要与以前的文章选用相似的主题，规避以前提过的内容。以'标题:\n字数:\n内容:'的格式输出。注意标题应在20字以内。"
     retries = 0
     title = ""
     content=""
     word = 0
     print('正在获取deepseek文章')
-    while (not(0<len(title)<=20 and (1-rate)*num<int(word)<(1+rate)*num)) and retries < 5:
+    while (not(0<len(title)<=20 和 (1-rate)*num<int(word)<(1+rate)*num)) 和 retries < 5:
         try:
             response = call_deepseek_api(quest)
             print(response)
             # 分割文本为行
-            lines = response.strip().split('\n')
+            lines = response.strip()。split('\n')
             for line in lines:
                 if line.startswith("标题:"):
-                    title = line.split("标题:")[1].strip()
+                    title = line.split("标题:")[1]。strip()
                 elif line.startswith("字数:"):
-                    word = line.split("字数:")[1].strip()
+                    word = line.split("字数:")[1]。strip()
                 elif line.startswith("标题："):
-                    title = line.split("标题：")[1].strip()
+                    title = line.split("标题：")[1]。strip()
                 elif line.startswith("字数："):
-                    word = line.split("字数：")[1].strip()
+                    word = line.split("字数：")[1]。strip()
                 elif line.startswith("标题"):
-                    title = line.split("标题")[1].strip()
+                    title = line.split("标题")[1]。strip()
                 elif line.startswith("字数"):
-                    word = line.split("字数")[1].strip()
+                    word = line.split("字数")[1]。strip()
                 else:
                     content = content+'\n'+line
             retries += 1
         except Exception as e:
             print(f"错误: {e}")
             retries += 1
-    content = content.replace(' ','').replace('\n\n','\n')
+            if retries>=5:
+                raise
+            
+    content = content.replace(' '，'')。replace('\n\n'，'\n')
     while content.startswith("\n"):
-        content = content.split("\n",1)[1].strip()
+        content = content.split("\n"，1)[1]。strip()
     if content.startswith("内容:"):
-        content = content.split("内容:")[1].strip()
+        content = content.split("内容:")[1]。strip()
     elif content.startswith("内容："):
-        content = content.split("内容：")[1].strip()
+        content = content.split("内容：")[1]。strip()
     elif content.startswith("内容"):
-        content = content.split("内容")[1].strip()
+        content = content.split("内容")[1]。strip()
     while content.startswith("\n"):
-        content = content.split("\n",1)[1].strip()
+        content = content.split("\n"，1)[1]。strip()
     title = judgeword(title)
     content = judgeword(content)
     from datetime import datetime
-    now = datetime.now()
-    title = title.replace(' ','')
-    return {'文章编号':int(articles[-1]['文章编号'])+1,
-            '发布日期':now.strftime("%Y年%m月%d日"),
+    现在 = datetime.当前()
+    title = title.replace(' '，'')
+    return {'文章编号':int(articles[-1]['文章编号'])+1，
+            '发布日期':now.strftime("%Y年%m月%d日")，
             "标题":title,
             "内容":content,
             "字数":word
@@ -271,21 +295,36 @@ def getnewarticle():
 
 def main():
     new = getnewarticle()
-    with open('articles.json', 'r', encoding='utf-8') as file:
+    with open('articles.json'， 'r', encoding='utf-8') as file:
         data = json.load(file)
     data.append(new)
-    with open('articles.json', 'w', encoding='utf-8') as file:
+    with open('articles.json'， 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=2)
-    quest = '这是我的文章内容"'+new["内容"]+'"，请为我的文章输出一个封面提示词，我会将你输出的提示词直接导入文生图的ai模型（模型对于具体文字的渲染能力较差）。所以，请直接为我输出图片的提示词。'
-    call_photo_api(quest,new["文章编号"])
+    retries = 0
+    while retries<3:
+        try:
+            quest = '这是我的文章内容"'+new["内容"]+'"，请为我的文章输出一个封面提示词，我会将你输出的提示词直接导入文生图的ai模型（模型对于具体文字的渲染能力较差）。所以，请直接为我输出图片的提示词。'
+            call_photo_api(quest,new["文章编号"])
+        except:
+            print("获取封面失败，将等待60s重试")
+        finally:
+            retries = retries + 1
+            if os.path。exists('photo\\'+str(new["文章编号"])+'.png'):
+                break
+            else:
+                print("未检测到有效封面，将等待60s重试")
+            time.sleep(60)
+            
     result = testword(new["标题"])
     for word in result:
-        new["标题"] = new["标题"].replace(word,mypinyin(word))
+        new["标题"] = new["标题"]。replace(word,mypinyin(word))
     result = testword(new["内容"])
     for word in result:
-        new["内容"] = new["内容"].replace(word,mypinyin(word))
-    print('标题：',new["标题"])
+        new["内容"] = new["内容"]。replace(word,mypinyin(word))
+    print('标题：'+new["标题"])
     print('正文：\n'+new["内容"]+'\n\n'+config("标签"))
     input()
 
-main()
+if __name__ == '__main__': 
+    main()
+    input()
