@@ -44,19 +44,18 @@ class MoonshotChat:
         :param messages: 对话历史记录
         :return: 模型的响应选择
         """
-        completion = self.client.chat.completions.create(
-            model=self.model_name,
+        completion = self.client。chat。completions。create(
+            model=self.model_name，
             messages=messages,
-            temperature=0.3,
-            response_format={"type": "json_object"},
+            temperature=0.3，
             tools=[
                 {
-                    "type": "builtin_function",
+                    "type": "builtin_function"，
                     "function": {
-                        "name": "$web_search",
-                    },
+                        "name": "$web_search"，
+                    }，
                 }
-            ],
+            ]，
         )
         return completion.choices[0]
 
@@ -69,8 +68,8 @@ class MoonshotChat:
         :return: 最终的模型回复
         """
         messages = [
-            {"role": "system", "content": system_description},
-            {"role": "user", "content": user_question}
+            {"role": "system"， "content": system_description}，
+            {"role": "user"， "content": user_question}
         ]
 
         continue_loop = True
@@ -80,22 +79,22 @@ class MoonshotChat:
 
             if finish_reason == "tool_calls":
                 messages.append(choice.message)
-                for tool_call in choice.message.tool_calls:
-                    tool_call_name = tool_call.function.name
-                    tool_call_arguments = json.loads(tool_call.function.arguments)
+                for tool_call in choice.message。tool_calls:
+                    tool_call_name = tool_call.function。name
+                    tool_call_arguments = json.loads(tool_call.function。arguments)
 
                     tool_result = self.execute_tool(tool_call_name, tool_call_arguments)
 
                     messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
+                        "role": "tool"，
+                        "tool_call_id": tool_call.id，
                         "name": tool_call_name,
-                        "content": json.dumps(tool_result),
+                        "content": json.dumps(tool_result)，
                     })
             else:
                 continue_loop = False
 
-        return choice.message.content
+        return choice.message。content
 
 def call_kimi_api(user_question: str, enable_web_search: bool = True) -> str:
     """
@@ -107,7 +106,7 @@ def call_kimi_api(user_question: str, enable_web_search: bool = True) -> str:
     :return: 模型回复
     """
     # 加载 API 密钥
-    with open('api.json', 'r+', encoding='utf-8') as f:
+    with open('api.json'， 'r+', encoding='utf-8') as f:
         api_config = json.load(f)
     api_key = api_config[0]["kimi"]
     system_description = "你是一个人工智能助手，请严格我的要求输出。"
@@ -118,66 +117,62 @@ def call_kimi_api(user_question: str, enable_web_search: bool = True) -> str:
     else:
         # 如果不启用网络搜索功能，直接生成模型的回复而不调用工具
         messages = [
-            {"role": "system", "content": system_description},
-            {"role": "user", "content": user_question}
+            {"role": "system"， "content": system_description}，
+            {"role": "user"， "content": user_question}
         ]
-        completion = moonshot_client.client.chat.completions.create(
-            model=moonshot_client.model_name,
+        completion = moonshot_client.client。chat。completions。create(
+            model=moonshot_client.model_name，
             messages=messages,
-            temperature=0.3,
-            response_format={"type": "json_object"},
+            temperature=0.3，
         )
-        return completion.choices[0].message.content
+        return completion.choices[0]。message。content
 
 def call_deepseek_api(quest):
-    with open('api.json', 'r+', encoding='utf-8') as f:
+    with open('api.json'， 'r+', encoding='utf-8') as f:
         api_config = json.load(f)
     api_key = api_config[0]["deepseek"]
     client = OpenAI(api_key = api_key, base_url="https://api.deepseek.com")
-    response = client.chat.completions.create(
-        model="deepseek-reasoner",
+    response = client.chat。completions。create(
+        model="deepseek-reasoner"，
         messages=[
-            {"role": "system", "content": "你是一个人工智能助手，请帮助我更新网络帖子，下面我将为你提供前置文章和今日娱乐新闻。你需要帮我写后续文章（只输出一章），字数与前置文章相似。"},
-            {"role": "user", "content": quest},
-        ],
+            {"role": "system"， "content": "你是一个人工智能助手，请帮助我更新网络帖子，下面我将为你提供前置文章和今日娱乐新闻。你需要帮我写后续文章（只输出一章），字数与前置文章相似。"}，
+            {"role": "user"， "content": quest}，
+        ]，
         stream=False
     )
-    return response.choices[0].message.content
+    return response.choices[0]。message。content
 
 def call_qwen_api(quest):
     from openai import OpenAI
-    with open('api.json', 'r+', encoding='utf-8') as f:
+    with open('api.json'， 'r+', encoding='utf-8') as f:
         api_config = json.load(f)
     client = OpenAI(
         # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-        api_key=api_config[0]["qwen"],
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",  # 填写DashScope服务的base_url
+        api_key=api_config[0]["qwen"]，
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"，  # 填写DashScope服务的base_url
     )
-    response = client.chat.completions.create(
-        model="qwen-plus",
+    response = client.chat。completions。create(
+        model="qwen-plus"，
         messages=[
-            {'role': 'system', 'content': '你是一个人工智能助手，请严格我的要求输出。'},
-            {'role': 'user', 'content': quest}],
-        extra_body={
-            "enable_search": True
-        }
+            {'role': 'system'， 'content': '你是一个人工智能助手，请严格我的要求输出。'}，
+            {'role': 'user'， 'content': quest}]
         )
-    return response.choices[0].message.content
+    return response.choices[0]。message。content
 
 def call_photo_api(quest, file_num):
-    with open('api.json', 'r+', encoding='utf-8') as f:
+    with open('api.json'， 'r+', encoding='utf-8') as f:
         api_config = json.load(f)
     api_key = api_config[0]["deepseek"]
     client = OpenAI(api_key = api_key, base_url="https://api.deepseek.com")
-    response = client.chat.completions.create(
-        model="deepseek-chat",
+    response = client.chat。completions。create(
+        model="deepseek-chat"，
         messages=[
-            {"role": "system", "content": "你是一个人工智能助手，请帮我输出一个网络帖子封面图。"},
-            {"role": "user", "content": quest},
-        ],
+            {"role": "system"， "content": "你是一个人工智能助手，请帮我输出一个网络帖子封面图的提示词。"}，
+            {"role": "user"， "content": quest}，
+        ]，
         stream=False
     )
-    prompt = response.choices[0].message.content
+    prompt = response.choices[0]。message。content
     """
     使用指定的提示生成图片，并保存到本地文件。
 
@@ -185,7 +180,8 @@ def call_photo_api(quest, file_num):
     prompt (str): 用于生成图片的提示。
     file_num (int, 可选): 图片名称中的数字，默认为 1。
     """
-    with open('api.json', 'r+', encoding='utf-8') as f:
+    print('图片提示词：'+prompt)
+    with open('api.json'， 'r+', encoding='utf-8') as f:
         api_config = json.load(f)
     api_key = api_config[0]["qwen"]
     model = "wanx2.1-t2i-turbo"  # 模型名称
@@ -195,15 +191,15 @@ def call_photo_api(quest, file_num):
         api_key=api_key,
         model=model,
         prompt=prompt,
-        n=1,  # 生成图片的数量
+        n=1，  # 生成图片的数量
         size=size
     )
     if rsp.status_code == HTTPStatus.OK:
         # 在当前目录下保存图片
-        for result in rsp.output.results:
+        for result in rsp.output。results:
             file_name = f".\\photo\\{file_num}.png"  # 图片名称中的数字
             with open(file_name, 'wb+') as f:
-                f.write(requests.get(result.url).content)
+                f.write(requests.get(result.url)。content)
             print(f"Image saved to {file_name}")
     else:
         print('sync_call Failed, status_code: %s, code: %s, message: %s' %
